@@ -15,6 +15,11 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Devel|MinSizeRel|RelWithDebInfo|Release")
   message(FATAL_ERROR "CMAKE_BUILD_TYPE not set. Please set it first.")
 endif()
 
+# Stop Windows builds
+if(WIN32)
+    message(FATAL_ERROR "Windows builds are disabled in this fork.")
+endif()
+
 # Pull in modules.
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules/")
 include(DuckStationUtils)
@@ -38,39 +43,12 @@ if(LINUX OR BSD)
   set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-# Release build optimizations for MSVC.
-if(MSVC)
-  add_definitions("/D_CRT_SECURE_NO_WARNINGS")
-  foreach(config CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-    # Set warning level 3 instead of 4.
-    string(REPLACE "/W3" "/W4" ${config} "${${config}}")
-
-    # Enable intrinsic functions, disable minimal rebuild, UTF-8 source, set __cplusplus version.
-    set(${config} "${${config}} /Oi /Gm- /utf-8 /Zc:__cplusplus")
-  endforeach()
-
-  # RelWithDebInfo is set to Ob1 instead of Ob2.   
-  string(REPLACE "/Ob1" "/Ob2" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-  string(REPLACE "/Ob1" "/Ob2" CMAKE_C_FLAGS_DEVEL "${CMAKE_C_FLAGS_DEVEL}")
-  string(REPLACE "/Ob1" "/Ob2" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-  string(REPLACE "/Ob1" "/Ob2" CMAKE_CXX_FLAGS_DEVEL "${CMAKE_CXX_FLAGS_DEVEL}")
-
-  # Disable incremental linking in RelWithDebInfo.
-  string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO" CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO}")
-  string(REPLACE "/INCREMENTAL" "/INCREMENTAL:NO" CMAKE_EXE_LINKER_FLAGS_DEVEL "${CMAKE_EXE_LINKER_FLAGS_DEVEL}")
-
-  # COMDAT folding/remove unused functions.
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF")
-  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /OPT:REF /OPT:ICF")
-  set(CMAKE_EXE_LINKER_FLAGS_DEVEL "${CMAKE_EXE_LINKER_FLAGS_DEVEL} /OPT:REF /OPT:ICF")
-else()
-  # Force debug symbols for Linux builds.
-  add_debug_symbol_flag(CMAKE_C_FLAGS_RELEASE)
-  add_debug_symbol_flag(CMAKE_CXX_FLAGS_RELEASE)
-endif()
+# Force debug symbols for Linux builds.
+add_debug_symbol_flag(CMAKE_C_FLAGS_RELEASE)
+add_debug_symbol_flag(CMAKE_CXX_FLAGS_RELEASE)
 
 # Warning disables.
-if(COMPILER_CLANG OR COMPILER_CLANG_CL OR COMPILER_GCC)
+if(COMPILER_CLANG OR COMPILER_GCC)
   include(CheckCXXFlag)
   check_cxx_flag(-Wall COMPILER_SUPPORTS_WALL)
   check_cxx_flag(-Wno-class-memaccess COMPILER_SUPPORTS_MEMACCESS)
@@ -79,20 +57,10 @@ if(COMPILER_CLANG OR COMPILER_CLANG_CL OR COMPILER_GCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch")
 endif()
 
-# We don't need exceptions, disable them to save a bit of code size.
-if(MSVC)
-  string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+# Disable exceptions and RTTI on non-MSVC compilers.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /D_HAS_EXCEPTIONS=0 /permissive-")
-  if(COMPILER_CLANG_CL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /clang:-fno-rtti")
-  endif()
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
-endif()
-
-# Write binaries to a seperate directory.
+# Write binaries to a separate directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
 
 # Installation directories. Everything goes into one directory.
@@ -111,7 +79,7 @@ if(BUILD_TESTS)
   enable_testing()
 endif()
 
-# Prevent fmt from being built with exceptions, or being thrown at call sites.
+# Prevent fmt from being built with exceptions.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DFMT_EXCEPTIONS=0")
 
 # Recursively include the source tree.
