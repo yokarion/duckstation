@@ -19,9 +19,6 @@ on:
       - '.github/ISSUE_TEMPLATE/*'
 
 jobs:
-  windows:
-    name: 💻 Windows
-    uses: "./.github/workflows/windows-build.yml"
   linux-appimage:
     name: 🐧 Linux AppImage
     uses: "./.github/workflows/linux-appimage-build.yml"
@@ -37,7 +34,7 @@ jobs:
 
   create-release:
     name: 📤 Create Release
-    needs: [windows, linux-appimage, linux-cross-appimage, linux-flatpak, macos]
+    needs: [linux-appimage, linux-cross-appimage, linux-flatpak, macos]
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/dev'
     steps:
@@ -58,12 +55,6 @@ jobs:
           prerelease: true
           title: "Latest Preview Build"
           files: |
-            ./artifacts/windows-x64/duckstation-windows-x64-release.zip
-            ./artifacts/windows-x64/duckstation-windows-x64-release-symbols.zip
-            ./artifacts/windows-x64-sse2/duckstation-windows-x64-sse2-release.zip
-            ./artifacts/windows-x64-sse2/duckstation-windows-x64-sse2-release-symbols.zip
-            ./artifacts/windows-arm64/duckstation-windows-arm64-release.zip
-            ./artifacts/windows-arm64/duckstation-windows-arm64-release-symbols.zip
             ./artifacts/linux-x64-appimage/DuckStation-x64.AppImage
             ./artifacts/linux-x64-sse2-appimage/DuckStation-x64-SSE2.AppImage
             ./artifacts/linux-arm64-appimage/DuckStation-arm64.AppImage
@@ -83,12 +74,6 @@ jobs:
           prerelease: false
           title: "Latest Rolling Release"
           files: |
-            ./artifacts/windows-x64/duckstation-windows-x64-release.zip
-            ./artifacts/windows-x64/duckstation-windows-x64-release-symbols.zip
-            ./artifacts/windows-x64-sse2/duckstation-windows-x64-sse2-release.zip
-            ./artifacts/windows-x64-sse2/duckstation-windows-x64-sse2-release-symbols.zip
-            ./artifacts/windows-arm64/duckstation-windows-arm64-release.zip
-            ./artifacts/windows-arm64/duckstation-windows-arm64-release-symbols.zip
             ./artifacts/linux-x64-appimage/DuckStation-x64.AppImage
             ./artifacts/linux-x64-sse2-appimage/DuckStation-x64-SSE2.AppImage
             ./artifacts/linux-arm64-appimage/DuckStation-arm64.AppImage
